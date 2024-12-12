@@ -10,6 +10,7 @@ import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { TipoHabitacion } from './tipo-hab.entity';
 import { ServicioHabitacion } from './servicios-hab.entity';
 import { FotoHabitacion } from './foto-hab.entity';
+import { TarifaHabitacion } from './tarifa-hab.entity';
 
 @Entity('habitaciones')
 export class Habitacion {
@@ -44,9 +45,6 @@ export class Habitacion {
   @Column()
   activo: boolean;
 
-  @Column()
-  disponibilidad: boolean;
-
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fechaCreacion: Date;
 
@@ -71,4 +69,11 @@ export class Habitacion {
     (fotoHabitacion) => fotoHabitacion.habitacion,
   )
   fotos: FotoHabitacion[];
+
+  // Nueva relación con las tarifas
+  @OneToMany(
+    () => TarifaHabitacion,
+    (tarifaHabitacion) => tarifaHabitacion.habitacion,
+  )
+  tarifas: TarifaHabitacion[];
 }
