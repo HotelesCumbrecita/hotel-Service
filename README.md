@@ -30,6 +30,16 @@
 
 ```bash
 $ npm install
+$ npm i
+$ npm install @nestjs/typeorm typeorm
+$ npm install @nestjs/microservices
+$ npm i class-validator class-transformer
+$ npm i @nestjs/config
+$ npm i joi
+$ npm i typeorm
+$ npm install @nestjs/typeorm typeorm pg
+$ npm i nats
+
 ```
 
 ## Compile and run the project
