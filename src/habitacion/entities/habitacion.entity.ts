@@ -70,7 +70,6 @@ export class Habitacion {
   )
   fotos: FotoHabitacion[];
 
-  // Nueva relación con las tarifas
   @OneToMany(
     () => TarifaHabitacion,
     (tarifaHabitacion) => tarifaHabitacion.habitacion,

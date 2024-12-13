@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { HabitacionModule } from './habitacion/habitacion.module';
 import { HotelModule } from './hotel/hotel.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';

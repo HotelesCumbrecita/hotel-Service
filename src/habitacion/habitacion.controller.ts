@@ -129,4 +129,36 @@ export class HabitacionController {
   async remove(@Payload() id: number) {
     return this.habitacionService.remove(id);
   }
+
+  @MessagePattern({ cmd: 'calcular_precio' })
+  async calcularPrecio(
+    @Payload()
+    payload: {
+      habitacionId: number;
+      fechaInicio: Date;
+      fechaFin: Date;
+    },
+  ) {
+    return this.habitacionService.calcularPrecio(
+      payload.habitacionId,
+      payload.fechaInicio,
+      payload.fechaFin,
+    );
+  }
+
+  /*@MessagePattern({ cmd: 'verificar_disponibilidad' })
+  async verificarDisponibilidad(
+    @Payload()
+    payload: {
+      habitacionId: number;
+      fechaInicio: Date;
+      fechaFin: Date;
+    },
+  ) {
+    return this.habitacionService.verificarDisponibilidad(
+      payload.habitacionId,
+      payload.fechaInicio,
+      payload.fechaFin,
+    );
+  }*/
 }

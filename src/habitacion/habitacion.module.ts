@@ -6,6 +6,7 @@ import { Habitacion } from './entities/habitacion.entity';
 import { ServicioHabitacion } from './entities/servicios-hab.entity';
 import { FotoHabitacion } from './entities/foto-hab.entity';
 import { TipoHabitacion } from './entities/tipo-hab.entity';
+import { TarifaHabitacion } from './entities/tarifa-hab.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TipoHabitacion } from './entities/tipo-hab.entity';
       ServicioHabitacion,
       FotoHabitacion,
       TipoHabitacion,
+      TarifaHabitacion,
     ]),
   ],
   controllers: [HabitacionController],

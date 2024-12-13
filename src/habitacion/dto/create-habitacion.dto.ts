@@ -55,4 +55,15 @@ export class CreateHabitacionDto {
   @IsOptional()
   @IsArray()
   serviciosEspecificos: { nombre: string; descripcion: string }[];
+
+  @IsOptional()
+  @IsArray()
+  tarifas: {
+    precio: number;
+    diaSemana?: number;
+    fechaInicio?: Date;
+    fechaFin?: Date;
+    temporada?: string;
+    prioridad?: number;
+  }[];
 }

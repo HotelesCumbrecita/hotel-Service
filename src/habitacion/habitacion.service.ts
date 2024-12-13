@@ -3,7 +3,7 @@ import { RpcException } from '@nestjs/microservices';
 import { CreateHabitacionDto } from './dto/create-habitacion.dto';
 import { UpdateHabitacionDto } from './dto/update-habitacion.dto';
 import { Habitacion } from './entities/habitacion.entity';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ServicioHabitacion } from './entities/servicios-hab.entity';
 import { FotoHabitacion } from './entities/foto-hab.entity';
@@ -12,6 +12,8 @@ import { CreateFotoHabitacionDto } from './dto/create-foto-habitacion.dto';
 import { CreateServicioHabitacionDto } from './dto/create-servicio-habitacion.dto';
 import { CreateTipoHabitacionDto } from './dto/create-tipo-habitacion.dto';
 import { TipoHabitacion } from './entities/tipo-hab.entity';
+import { CreateTarifaHabitacionDto } from './dto/create-tarifa-habitacion.dto';
+import { TarifaHabitacion } from './entities/tarifa-hab.entity';
 
 @Injectable()
 export class HabitacionService {
@@ -24,6 +26,8 @@ export class HabitacionService {
     private fotoHabitacionRepository: Repository<FotoHabitacion>,
     @InjectRepository(TipoHabitacion)
     private tipoHabitacionRepository: Repository<TipoHabitacion>,
+    @InjectRepository(TarifaHabitacion)
+    private tarifaHabitacionRepository: Repository<TarifaHabitacion>,
   ) {}
 
   // Método para crear una nueva habitación
@@ -40,7 +44,6 @@ export class HabitacionService {
           capacidad: createHabitacionDto.capacidad,
           cantidad: 1, // Cada iteración representa una habitación individual
           activo: createHabitacionDto.activo,
-          disponibilidad: createHabitacionDto.disponibilidad,
           fechaCreacion: new Date(),
           usuarioCreador: createHabitacionDto.usuarioCreador,
           hotelId: createHabitacionDto.hotelId,
@@ -73,6 +76,17 @@ export class HabitacionService {
             }),
           );
           await this.fotoHabitacionRepository.save(fotos);
+        }
+
+        // Añadir tarifas a la habitación si se proporcionan
+        if (createHabitacionDto.tarifas) {
+          const tarifas = createHabitacionDto.tarifas.map((tarifaDto) =>
+            this.tarifaHabitacionRepository.create({
+              ...tarifaDto,
+              habitacionId: savedHabitacion.habitacionId,
+            }),
+          );
+          await this.tarifaHabitacionRepository.save(tarifas);
         }
 
         habitaciones.push(savedHabitacion);
@@ -311,6 +325,18 @@ export class HabitacionService {
         await this.fotoHabitacionRepository.save(fotos);
       }
 
+      // Actualizar tarifas si se proporcionan
+      if (updateHabitacionDto.tarifas) {
+        await this.tarifaHabitacionRepository.delete({ habitacionId: id });
+        const tarifas = updateHabitacionDto.tarifas.map((tarifaDto) =>
+          this.tarifaHabitacionRepository.create({
+            ...tarifaDto,
+            habitacionId: id,
+          }),
+        );
+        await this.tarifaHabitacionRepository.save(tarifas);
+      }
+
       return this.habitacionRepository.findOne({
         where: { habitacionId: id },
         relations: ['hotel', 'tipoHabitacion', 'serviciosEspecificos', 'fotos'],
@@ -334,5 +360,80 @@ export class HabitacionService {
     } catch (error) {
       throw new RpcException(error.message);
     }
+  }
+
+  // Método para calcular el precio de una habitación
+  async calcularPrecio(
+    habitacionId: number,
+    fechaInicio: Date,
+    fechaFin: Date,
+  ) {
+    try {
+      const tarifas = await this.tarifaHabitacionRepository.find({
+        where: { habitacionId },
+      });
+
+      const fechasReserva = this.getFechasEntre(fechaInicio, fechaFin);
+      let precioTotal = 0;
+
+      for (const fecha of fechasReserva) {
+        const tarifasAplicables = tarifas.filter((tarifa) => {
+          const coincideFecha =
+            (!tarifa.fechaInicio || fecha >= tarifa.fechaInicio) &&
+            (!tarifa.fechaFin || fecha <= tarifa.fechaFin);
+
+          const coincideDiaSemana =
+            tarifa.diaSemana === null || tarifa.diaSemana === fecha.getDay();
+
+          return coincideFecha && coincideDiaSemana;
+        });
+
+        // Ordenar por prioridad ascendente (menor número = mayor prioridad)
+        tarifasAplicables.sort((a, b) => a.prioridad - b.prioridad);
+
+        const tarifaAplicable = tarifasAplicables[0];
+
+        if (tarifaAplicable) {
+          precioTotal += tarifaAplicable.precio;
+        } else {
+          // Si no hay tarifa aplicable, lanzar error o usar tarifa base
+          throw new Error(
+            `No hay tarifa disponible para la fecha ${fecha.toISOString()}`,
+          );
+        }
+      }
+
+      return precioTotal;
+    } catch (error) {
+      throw new RpcException(error.message);
+    }
+  }
+
+  // Método para verificar la disponibilidad de una habitación
+  /*async verificarDisponibilidad(
+    habitacionId: number,
+    fechaInicio: Date,
+    fechaFin: Date,
+  ) {
+    try {
+      // Como la gestión de reservas está en otro microservicio,
+      // asumimos que la habitación está disponible
+      return true;
+    } catch (error) {
+      throw new RpcException(error.message);
+    }
+  }*/
+
+  // Método auxiliar para obtener las fechas entre dos fechas
+  private getFechasEntre(fechaInicio: Date, fechaFin: Date): Date[] {
+    const fechas = [];
+    let fechaActual = new Date(fechaInicio);
+
+    while (fechaActual <= fechaFin) {
+      fechas.push(new Date(fechaActual));
+      fechaActual.setDate(fechaActual.getDate() + 1);
+    }
+
+    return fechas;
   }
 }
